@@ -1,0 +1,129 @@
+
+
+.job_template_config: &sshconfig
+  before_script:
+    - "which ssh-agent || ( apt-get install openssh-client )"
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > id_rsa
+    - chmod 600 id_rsa
+    - ssh-add id_rsa 
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 103.127.132.62 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+ 
+
+stages:
+  - pull_fe
+  - pull_be
+  - build_app
+  - test_app
+  - deploy_app
+  - push_docker
+  - notification
+
+variables:
+  CREDENTIAL: 'team2'
+  SERVER: 'team2@103.127.132.62'
+  DIR_FE: '/home/team2/dumbflix-frontend'
+  DIR_BE: '/home/team2/dumbflix-backend'
+  BRANCH: 'main'
+  IMAGES_FE: 'team2dumbways/frontend:1.0'
+  IMAGES_BE: 'team2dumbways/backend:1.0'
+  DOMAIN_FE: 'https://team2.studentdumbways.my.id'
+  DOMAIN_BE: 'https://api.team2.studentdumbways.my.id'
+
+
+pull_fe:
+  stage: pull_fe
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig
+  script:
+    - ssh $SERVER 
+     "docker compose down; 
+     cd $DIR_FE;
+     git pull origin $BRANCH; 
+     exit"
+    
+pull_be:
+  stage: pull_be
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig
+  script:
+    - ssh $SERVER 
+      "cd $DIR_BE;
+      git pull origin $BRANCH;
+      exit"
+      
+
+build_app:
+  stage: build_app
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig
+  script:
+    - ssh $SERVER
+      "cd $DIR_FE;
+     docker rmi $IMAGES_FE;
+     docker build -t $IMAGES_FE .;
+     cd $DIR_BE;
+     docker rmi $IMAGES_BE;
+     docker compose up -d db;
+     docker build -t $IMAGES_BE .;
+     docker images;
+     docker compose up -d;
+     exit"
+      
+
+test_app:
+  stage: test_app
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig
+  script:
+    - ssh $SERVER 
+     "docker ps -a;
+     wget --spider $DOMAIN_FE;
+     wget --spider $DOMAIN_BE;
+     docker ps -a;
+     exit"
+       
+
+deploy_app:
+  stage: deploy_app
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig
+  script:
+    - ssh $SERVER 
+     "docker compose up -d;
+     docker compose ps -a;
+     exit"
+      
+
+push_docker:
+  stage: push_docker
+  image: docker
+  services:
+    - docker:dind
+  <<: *sshconfig 
+
+  script:
+    - ssh $SERVER 
+     "docker compose down;
+     docker push $IMAGES_FE;
+     docker push $IMAGES_BE;
+     docker compose up -d;
+     docker compose ps -a;
+     exit"
+      
+
+
