@@ -1,4 +1,5 @@
 FROM node:10.23.0-alpine
+
 WORKDIR apps
 
 COPY . .
@@ -14,4 +15,3 @@ RUN npx sequelize db:migrate
 EXPOSE 5000
 
 CMD ["pm2-runtime", "server.js"]
-
