@@ -32,7 +32,6 @@ pipeline {
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
                     cd ${dirbe}
                     git pull origin ${branch} 
-                    docker ps -a
                     exit
                     EOF''' 
                 }
@@ -45,16 +44,16 @@ pipeline {
                 sshagent([credential]){
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
                     docker compose ps -a
-		    cd ${dirfe}
+		    cd ${dirbe}
+                    docker rmi ${imagesbe}
+                    docker build -t ${imagesbe} .
+                    cd ${dirfe}
                     docker rmi ${imagesfe}
                     docker build -t ${imagesfe} .
-                    cd ${dirbe}
-                    docker rmi ${imagesbe}
-                    docker compose up -d db
-                    docker build -t ${imagesbe} .
-                    docker images
-		    docker compose up -d
-                    exit
+                    docker compose up -d
+	            docker images
+                    docker compose ps -a
+		    exit
                     EOF''' 
                 }
             }   
@@ -64,8 +63,10 @@ pipeline {
             steps {
                 sshagent([credential]){
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
+                    curl localhost:3000
+		    curl localhost:5000
+		    wget --spider ${domainbe}
                     wget --spider ${domainfe}
-                    wget --spider ${domainbe}
 		    docker compose ps -a
                     exit
                     EOF''' 
