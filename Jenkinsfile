@@ -6,8 +6,8 @@ pipeline {
         dirfe= '/home/team2/dumbflix-frontend'
         dirbe= '/home/team2/dumbflix-backend'
         branch = 'main'
-        imagesfe = 'team2dumbways/frontend:1.0'
-        imagesbe = 'team2dumbways/backend:1.0'
+        imagesfe = 'irwanpanai/dffrontend:1.0'
+        imagesbe = 'irwanpanai/dfbackend:1.0'
         domainfe = 'https://team2.studentdumbways.my.id/'
         domainbe = 'https://api.team2.studentdumbways.my.id/'
     }
@@ -16,7 +16,7 @@ pipeline {
             steps {
                 sshagent([credential]){
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    docker compose down frontend backend
+                    docker compose down 
                     cd ${dirfe}
                     git pull origin ${branch} 
                     exit
@@ -53,7 +53,7 @@ pipeline {
                     docker compose up -d db
                     docker build -t ${imagesbe} .
                     docker images
-		    docker compose up -d webserver
+		    docker compose up -d
                     exit
                     EOF''' 
                 }
@@ -64,16 +64,9 @@ pipeline {
             steps {
                 sshagent([credential]){
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    cd ${directory}
-                    docker run --name test_fe -p 3000:3000 -d ${imagesfe}
-                    docker run --name test_be -p 5000:5000 -d ${imagesbe}
-                    docker ps -a
                     wget --spider ${domainfe}
                     wget --spider ${domainbe}
-                    docker stop test_fe 
-                    docker stop test_be
-                    docker rm test_fe 
-                    docker rm test_be
+		    docker compose ps -a
                     exit
                     EOF''' 
                 }
@@ -96,10 +89,8 @@ pipeline {
             steps {
                 sshagent([credential]){
                     sh '''ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    docker compose down frontend backend
                     docker push ${imagesfe}
                     docker push ${imagesbe}
-                    docker compose up -d
                     docker compose ps -a
                     exit
                     EOF''' 
