@@ -8,4 +8,4 @@ How to deploy dumbflix-backend :
 - Change config/config.json to your database
 - Deploy dumbflix-backend with port 5000
 
-"coba aja dulu"
+"coba dulu"
