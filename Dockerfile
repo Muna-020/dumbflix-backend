@@ -1,5 +1,4 @@
 FROM node:10.23.0-alpine
-
 WORKDIR apps
 
 COPY . .
